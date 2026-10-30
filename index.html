@@ -73,6 +73,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:7px 4px;text-align:left;
 #tb tr.us{background:color-mix(in srgb,var(--ac) 14%,transparent)}
 #tb td.z1{box-shadow:inset 4px 0 var(--ac)}#tb td.z2{box-shadow:inset 4px 0 var(--ac2)}#tb td.z3{box-shadow:inset 4px 0 #ff5d5d}
 #tb input{width:42px;padding:6px 2px;text-align:center;font-size:.85rem}
+.pl.sel{border-color:var(--ac)}.mini{max-width:280px;margin:0 auto 4px}label.sub{display:block}label.sub input{margin-top:3px}
 </style></head><body>
 <div class="hero">
 <div class="brand"><div class="badge">KA</div><div><h1>Kıl Aldırmaz<br>Teknik Heyet</h1></div></div>
@@ -85,16 +86,15 @@ table{width:100%;border-collapse:collapse}td,th{padding:7px 4px;text-align:left;
 <div class="tabs" id="tabs"></div>
 
 <div class="sec on" id="s0">
-<div class="card"><h2>Kadro kartları</h2><div class="sub">Oyuncuya dokun, hoca yorumu gelsin. (Puanlar fotoğraftan okundu, hatalıysa idare edin 😄)</div></div>
-<div class="grid" id="grid"></div>
-<div class="card" id="plbox" style="margin-top:10px"><div class="quote">👆 Bir oyuncu seç.</div></div>
-</div>
+<div class="card"><h2>Kadro yönetimi</h2><div class="sub" id="sumq"></div><div class="sub" style="margin-top:6px">Oyuncuya dokun: puan, değer, sözleşme ve özellik gir. İlk 11 için Taktik sekmesinde değiştirme modunu aç.</div></div>
+<div id="grid"></div>
+<div class="card" id="plbox"><div class="quote">👆 Bir oyuncu seç.</div></div></div>
 
 <div class="sec" id="s1">
-<div class="card"><h2>Taktik tahtası</h2><div class="sub">4-2-3-1 • Oyuncuya dokun</div></div>
+<div class="card"><h2>Taktik tahtası</h2><div class="row"><button id="swb" onclick="SW=!SW;PK=-1;$('swm').textContent=SW?'Bir oyuncuya, sonra yerine geçecek oyuncuya dokun':'';rSQ()">🔁 Değiştirme: KAPALI</button><button id="htb" onclick="HT=!HT;rSQ()">🔥 Isı haritası: KAPALI</button></div><div class="sub" id="swm" style="margin-top:8px"></div></div>
 <div class="pitch" id="pitch"></div>
-<div class="card" id="pbox"><div class="quote">Tahtadan bir oyuncu seç, İrfan analiz etsin.</div></div>
-</div>
+<div id="bench"></div>
+<div class="card" id="pbox"></div></div>
 
 <div class="sec" id="s2">
 <div class="card"><h2>Maç sonrası analiz</h2>
@@ -119,11 +119,13 @@ table{width:100%;border-collapse:collapse}td,th{padding:7px 4px;text-align:left;
 </div>
 
 <div class="sec" id="s5">
-<div class="card"><h2>🔍 Scout köşesi</h2><div class="sub">SoFIFA’dan baktığın oyuncuyu buraya gir, hocalar karar versin. Liste bu cihazda kalır.</div>
-<div class="row" style="margin:8px 0"><a href="https://sofifa.com/players" target="_blank" rel="noopener"><button class="go">SoFIFA’yı aç (FC 25 seç)</button></a></div>
-<div class="row"><input id="sn" placeholder="Oyuncu adı"><input id="sp" placeholder="Mevki (SNT, MO…)"></div>
-<div class="row" style="margin-top:6px"><input id="so" type="number" placeholder="Genel"><input id="sq" type="number" placeholder="Potansiyel"><input id="sv" placeholder="Değer (€)"></div>
-<button class="go" style="margin-top:8px" onclick="addS()">Listeye ekle</button></div>
+<div class="card"><h2>🔍 Scout & transfer</h2><div class="sub">SoFIFA’dan bakıp buraya gir. Durumu seç: izleniyor, satın alındı, kiralandı.</div>
+<a href="https://sofifa.com/players" target="_blank" rel="noopener"><button class="go" style="width:100%;margin:8px 0">SoFIFA’yı aç (FC 25 seç)</button></a>
+<div class="row"><input id="sn" placeholder="Oyuncu adı"><input id="sp" placeholder="Mevki"></div>
+<div class="row" style="margin-top:6px"><input id="so" type="number" placeholder="Genel"><input id="sq" type="number" placeholder="Potansiyel"><input id="sv" placeholder="Piyasa değeri"></div>
+<div class="row" style="margin-top:6px"><select id="ss"><option value="izle">👀 İzleniyor</option><option value="satin">✅ Satın alındı</option><option value="kira">🔄 Kiralandı</option><option value="red">❌ Vazgeçildi</option></select><input id="sf" type="number" step="any" placeholder="Bedel M€"><input id="sy" type="number" placeholder="Sözleşme (yıl)"></div>
+<button class="go" style="margin-top:8px;width:100%" onclick="addS()">Listeye ekle</button></div>
+<div class="card"><div class="sub" id="ssum"></div></div>
 <div id="slist"></div></div>
 <div class="sec" id="s6">
 <div class="card"><h2>🗄️ FC 25 Veritabanı</h2><div class="sub" id="dbc">Yükleniyor…</div>
@@ -187,8 +189,7 @@ return pick(["Fena değil ama kadroda zaten var, yedek olur.","Şimdilik pas, b�
 function addS(){const n=$("sn").value.trim();if(!n)return;S.unshift({n,p:$("sp").value.trim(),o:+$("so").value||0,q:+$("sq").value||0,v:$("sv").value.trim()});saveS();["sn","sp","so","sq","sv"].forEach(i=>$(i).value="");rS()}
 function dS(i){S.splice(i,1);saveS();rS()}
 function rS(){$("slist").innerHTML=S.length?S.map((s,i)=>`<div class="card"><div class="ovr">${s.o||"?"} <span class="pos">pot ${s.q||"?"} • ${s.p||"-"} • ${s.v||"-"}</span></div><b>${s.n}</b><div class="quote" style="min-height:0">${verdict(s)}</div><button onclick="dS(${i})">Sil</button></div>`).join(""):"<div class=\"card sub\">Henüz scout yok.</div>"}
-rS();
-const names=["Oyuncular","Taktik","Maç sonrası","Basın","Lig","Scout","Veritabanı","Puan"];
+const names=["Kadro","Taktik","Maç sonrası","Basın","Lig","Scout","Veritabanı","Puan"];
 $("tabs").innerHTML=names.map((n,i)=>`<button class="${i?"":"on"}" onclick="tab(${i})">${n}</button>`).join("");
 function tab(i){document.querySelectorAll(".sec").forEach((e,j)=>e.classList.toggle("on",i==j));document.querySelectorAll("#tabs button").forEach((e,j)=>e.classList.toggle("on",i==j))}
 
@@ -209,7 +210,7 @@ F=DB.r.filter(r=>(!q||r[0].toLowerCase().includes(q))&&(!p||r[2]==p||r[3].split(
 const k={o:1,a:4,p:8,s:9,m:10,d:11,f:12,y:13}[$("fs").value];
 F.sort((a,b)=>$("fs").value=="a"?a[k]-b[k]||b[1]-a[1]:b[k]-a[k]);lim=40;opened=-1;sh()}
 function sh(){$("dbc").textContent=`${DB.r.length} oyuncu • ${F.length} sonuç`;
-$("dbl").innerHTML=F.slice(0,lim).map((r,i)=>`<div class="card" onclick="op(${i})"><div class="ovr">${r[1]} <span class="pos">${r[2]}${r[3]?" • "+r[3]:""} • ${r[4]} yaş</span></div><b>${r[0]}</b><div class="pos">${DB.t[r[7]]} • ${DB.n[r[5]]}${vt(r)}</div>`+(opened==i?`<div style="margin-top:6px;font-size:.9rem">HIZ ${r[8]} • ŞUT ${r[9]} • PAS ${r[10]} • DRİ ${r[11]} • DEF ${r[12]} • FİZ ${r[13]}<br>${r[14]?"Sol":"Sağ"} ayak • Zayıf ayak ${r[15]}★ • Hareket ${r[16]}★ • ${r[17]}cm<br><span class="pos">${DB.l[r[6]]}${r[18]?" • "+r[18]:""}</span><br><div class="row" style="margin:8px 0"><input type="number" step="any" placeholder="Değer (M€)" value="${(PV[vk(r)]||{}).v||""}" onclick="event.stopPropagation()" onchange="sv2(${i},'v',this.value)"><input type="number" placeholder="Potansiyel" value="${(PV[vk(r)]||{}).q||""}" onclick="event.stopPropagation()" onchange="sv2(${i},'q',this.value)"></div><div class="quote" style="min-height:0;margin:6px 0">${say(r[0])}</div><button class="go" onclick="event.stopPropagation();sc2(${i})">Scout listesine ekle</button></div>`:"")+`</div>`).join("");
+$("dbl").innerHTML=F.slice(0,lim).map((r,i)=>`<div class="card" onclick="op(${i})"><div class="ovr">${r[1]} <span class="pos">${r[2]}${r[3]?" • "+r[3]:""} • ${r[4]} yaş</span></div><b>${r[0]}</b><div class="pos">${DB.t[r[7]]} • ${DB.n[r[5]]}${vt(r)}</div>`+(opened==i?`<div style="margin-top:6px;font-size:.9rem">HIZ ${r[8]} • ŞUT ${r[9]} • PAS ${r[10]} • DRİ ${r[11]} • DEF ${r[12]} • FİZ ${r[13]}<br>${r[14]?"Sol":"Sağ"} ayak • Zayıf ayak ${r[15]}★ • Hareket ${r[16]}★ • ${r[17]}cm<br><span class="pos">${DB.l[r[6]]}${r[18]?" • "+r[18]:""}</span><br><div class="row" style="margin:8px 0"><input type="number" step="any" placeholder="Değer (M€)" value="${(PV[vk(r)]||{}).v||""}" onclick="event.stopPropagation()" onchange="sv2(${i},'v',this.value)"><input type="number" placeholder="Potansiyel" value="${(PV[vk(r)]||{}).q||""}" onclick="event.stopPropagation()" onchange="sv2(${i},'q',this.value)"></div><div class="quote" style="min-height:0;margin:6px 0">${say(r[0])}</div><div class="row"><button class="go" onclick="event.stopPropagation();sc2(${i})">Scout’a ekle</button><button class="go" onclick="event.stopPropagation();sq2(${i})">Kadroya ekle</button></div></div>`:"")+`</div>`).join("");
 $("mo").style.display=F.length>lim?"block":"none"}
 function op(i){opened=opened==i?-1:i;sh()}
 function sc2(i){const r=F[i];{const x=PV[vk(r)]||{};S.unshift({n:r[0],p:r[2],o:r[1],q:x.q||0,v:x.v?x.v+"M €":""})};saveS();rS();alert(r[0]+" scout listesine eklendi")}
@@ -248,4 +249,54 @@ const vk=r=>r[0]+"|"+DB.t[r[7]];
 function vt(r){const x=PV[vk(r)];return x?` • ${x.v?x.v+"M €":""}${x.q?" • pot "+x.q:""}`:""}
 function sv2(i,f,v){const r=F[i],k=vk(r);PV[k]=PV[k]||{};PV[k][f]=parseFloat(v)||0;try{localStorage.setItem("pv",JSON.stringify(PV))}catch(e){}}
 function pvOK(r){const pq=+$("pq").value||0,vm=+$("vm").value||0;if(!pq&&!vm)return true;const x=PV[vk(r)];if(!x)return false;return(!pq||x.q>=pq)&&(!vm||(x.v>0&&x.v<=vm))}
+
+const SL=P.slice(0,11).map(p=>({p:p.p,x:p.x,y:p.y}));
+let SQ=P.map((p,i)=>({n:p.n,p:p.p,o:p.o,xi:i<11?i:-1,r:0,v:0,c:"",a:{pac:0,sho:0,pas:0,dri:0,def:0,phy:0},h:[]}));
+try{const z=JSON.parse(localStorage.getItem("sq")||"null");if(z&&z.length)SQ=z}catch(e){}
+let SW=false,HT=false,CUR=-1,PK=-1,DQ=-1;
+function svQ(){try{localStorage.setItem("sq",JSON.stringify(SQ))}catch(e){}}
+const PM={KL:[50,88],SLB:[15,72],STP:[50,74],"SĞB":[85,72],MDO:[50,56],MO:[50,48],OOS:[50,38],SLK:[15,36],"SĞK":[85,36],SNT:[50,14]};
+function rc(r){return r>=8?"#3ddc84":r>=6?"var(--ac2)":r>0?"#ff5d5d":"var(--mu)"}
+function warn(q){const y=parseInt(q.c);return y&&y<=2027?" ⚠️":""}
+function qc(i){const q=SQ[i];return `<div class="pl" style="${PK==i||CUR==i?"border-color:var(--ac)":""}" onclick="selP(${i})"><div class="ovr">${q.o}<span class="pos">${q.p}</span></div><b>${q.n}</b><div class="pos" style="color:${rc(q.r)}">${q.r?"★ "+q.r:"puan yok"}${q.v?" • "+q.v+"M€":""}${q.c?" • "+q.c+warn(q):""}</div></div>`}
+function selP(i){if(SW&&PK>=0&&PK!=i){const a=SQ[PK],b=SQ[i];if(a.xi>=0||b.xi>=0){[a.xi,b.xi]=[b.xi,a.xi];svQ();$("swm").textContent=a.n+" ↔ "+b.n+" yer değiştirdi ✅";PK=-1;CUR=i;rSQ();return}}
+CUR=i;PK=SW?i:-1;if(SW)$("swm").textContent=SQ[i].n+" seçildi. Değiştireceğin oyuncuya dokun.";DQ=-1;rSQ()}
+function ed(i,f,v){const q=SQ[i];if(f=="h")q.h=[];else if(["r","o","v"].includes(f))q[f]=parseFloat(v)||0;else q[f]=v;svQ();DQ=-1;rSQ()}
+function eda(i,k,v){SQ[i].a[k]=parseInt(v)||0;svQ();dh($("mc"),hp(SQ[i]))}
+function dq(i){if(DQ!=i){DQ=i;rSQ();return}const q=SQ[i];if(q.xi>=0){const b=SQ.map((x,k)=>k).filter(k=>SQ[k].xi<0&&k!=i).sort((a,c)=>SQ[c].o-SQ[a].o)[0];if(b!=null)SQ[b].xi=q.xi}SQ.splice(i,1);CUR=-1;PK=-1;DQ=-1;svQ();rSQ()}
+function ctr(q){return q.xi>=0?[SL[q.xi].x,SL[q.xi].y]:(PM[q.p]||[50,50])}
+function hp(q){let s=7;for(const c of q.n)s=(s*31+c.charCodeAt(0))%2147483646;s=s||7;const R=()=>(s=s*16807%2147483647)/2147483647;const [cx,cy]=ctr(q),a=q.a||{},sx=6+(a.pac||60)/12,sy=7+(a.sho||60)/25,w=(q.r||6)/6,L=[];
+for(let k=0;k<70;k++){const g=()=>Math.sqrt(-2*Math.log(R()||.5))*Math.cos(6.283*R());L.push([Math.min(98,Math.max(2,cx+g()*sx)),Math.min(98,Math.max(2,cy+g()*sy)),w])}
+return L.concat(q.h||[])}
+function dh(cv,L){if(!cv)return;const W=300,H=400,c=cv.getContext("2d");c.clearRect(0,0,W,H);L.forEach(p=>{const x=p[0]*3,y=p[1]*4,g=c.createRadialGradient(x,y,0,x,y,34);g.addColorStop(0,`rgba(0,0,0,${.07*p[2]})`);g.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=g;c.fillRect(x-34,y-34,68,68)});
+const im=c.getImageData(0,0,W,H),d=im.data;for(let i=0;i<d.length;i+=4){const a=d[i+3];if(a<6){d[i+3]=0;continue}const t=Math.min(1,a/160);d[i]=t<.5?0:Math.round(255*(t-.5)*2);d[i+1]=t<.5?Math.round(255*t*2):Math.round(255*(1-(t-.5)*.8));d[i+2]=t<.3?Math.round(255*(1-t/.3)):0;d[i+3]=Math.min(200,a*1.6)}c.putImageData(im,0,0)}
+function mph(e){if(CUR<0)return;const r=$("mp").getBoundingClientRect(),q=SQ[CUR];q.h.push([(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100,4]);if(q.h.length>300)q.h.shift();svQ();dh($("mc"),hp(q))}
+function edHTML(i){const q=SQ[i],a=q.a||{};return `<h2>${q.n}</h2><div class="sub">Puan: <b id="rv" style="color:var(--ac)">${q.r}</b> / 10</div><input type="range" min="0" max="10" step="0.5" value="${q.r}" oninput="$('rv').textContent=this.value" onchange="ed(${i},'r',this.value)">
+<div class="row" style="margin-top:8px"><label class="sub">Genel<input type="number" value="${q.o}" onchange="ed(${i},'o',this.value)"></label><label class="sub">Mevki<input value="${q.p}" onchange="ed(${i},'p',this.value)"></label></div>
+<div class="row" style="margin-top:6px"><label class="sub">Değer (M€)<input type="number" step="any" value="${q.v||""}" onchange="ed(${i},'v',this.value)"></label><label class="sub">Sözleşme bitişi (yıl)<input value="${q.c}" placeholder="2028" onchange="ed(${i},'c',this.value)"></label></div>
+<div class="sub" style="margin:10px 0 4px">Özellikler</div><div class="row" style="flex-wrap:wrap">${["pac","sho","pas","dri","def","phy"].map(k=>`<label class="sub" style="flex:1 1 28%">${k.toUpperCase()}<input type="number" value="${a[k]||""}" onchange="eda(${i},'${k}',this.value)"></label>`).join("")}</div>
+<div class="sub" style="margin:10px 0 4px">🔥 Isı haritası: sahaya dokunarak bölge ekle</div><div class="pitch mini" id="mp" onclick="mph(event)"><div class="pb t"></div><div class="pb b"></div><div class="cc"></div><canvas id="mc" width="300" height="400" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1"></canvas></div>
+<div class="row" style="margin-top:8px"><button onclick="ed(${i},'h','')">Dokunmaları sil</button><button onclick="dq(${i})">${DQ==i?"Emin misin?":"Oyuncuyu sil"}</button></div>`}
+function rSQ(){if(CUR>=SQ.length)CUR=-1;const ix=SQ.map((q,i)=>i),xi=ix.filter(i=>SQ[i].xi>=0).sort((a,b)=>SQ[a].xi-SQ[b].xi),bn=ix.filter(i=>SQ[i].xi<0);
+const av=a=>a.length?(a.reduce((s,x)=>s+x,0)/a.length).toFixed(1):"-";const ex=SQ.filter(q=>warn(q)).map(q=>q.n);
+$("sumq").innerHTML=`İlk 11 ort. <b>${av(xi.map(i=>SQ[i].o))}</b> • Kadro değeri <b>${SQ.reduce((s,q)=>s+(q.v||0),0).toFixed(1)}M€</b> • Ort. puan <b>${av(SQ.filter(q=>q.r).map(q=>q.r))}</b>`+(ex.length?`<br>⚠️ Sözleşmesi bitiyor: ${ex.join(", ")}`:"");
+$("grid").innerHTML=`<div class="card"><h2>İlk 11</h2><div class="grid">${xi.map(qc).join("")}</div></div><div class="card"><h2>Yedekler</h2><div class="grid">${bn.map(qc).join("")||"<span class=sub>Yedek yok</span>"}</div></div>`;
+$("plbox").innerHTML=CUR>=0?edHTML(CUR):'<div class="quote">👆 Bir oyuncu seç.</div>';
+if(CUR>=0)dh($("mc"),hp(SQ[CUR]));
+$("pitch").innerHTML='<div class="pb t"></div><div class="pb b"></div><div class="cc"></div>'+(HT?'<canvas id="tc" width="300" height="400" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1"></canvas>':"")+xi.map(i=>{const q=SQ[i],s=SL[q.xi];return `<div class="dot" style="left:${s.x}%;top:${s.y}%" onclick="selP(${i})"><i style="border-color:${q.r?rc(q.r):"var(--ac2)"};${PK==i||CUR==i?"box-shadow:0 0 0 4px var(--ac)":""}">${q.o}</i><span>${q.n}</span></div>`}).join("");
+if(HT){const L=[];xi.forEach(i=>hp(SQ[i]).forEach(x=>L.push(x)));dh($("tc"),L)}
+$("bench").innerHTML=`<div class="card"><h2>Yedekler</h2><div class="grid">${bn.map(qc).join("")}</div></div>`;
+$("swb").textContent="🔁 Değiştirme: "+(SW?"AÇIK":"KAPALI");$("htb").textContent="🔥 Isı haritası: "+(HT?"AÇIK":"KAPALI");
+const c=CUR>=0?SQ[CUR]:null;$("pbox").innerHTML=c?`<div class="who">${c.n} • ${c.p} • Genel ${c.o}</div><div class="quote" style="min-height:0">${c.r?"★ "+c.r+" • ":""}${c.v?c.v+"M€ • ":""}${c.c?"Sözleşme "+c.c+warn(c):""}</div><button class="go" onclick="tab(0);$('plbox').scrollIntoView({behavior:'smooth'})">Detay / düzenle</button>`:'<div class="quote">Tahtadan bir oyuncu seç.</div>'}
+function sq2(i){const r=F[i],x=PV[vk(r)]||{};SQ.push({n:r[0],p:r[2],o:r[1],xi:-1,r:0,v:x.v||0,c:"",a:{pac:r[8],sho:r[9],pas:r[10],dri:r[11],def:r[12],phy:r[13]},h:[]});svQ();rSQ();alert(r[0]+" kadroya eklendi")}
+const ST={izle:"👀 İzleniyor",satin:"✅ Satın alındı",kira:"🔄 Kiralandı",red:"❌ Vazgeçildi"};
+function addS(){const n=$("sn").value.trim();if(!n)return;S.unshift({n,p:$("sp").value.trim(),o:+$("so").value||0,q:+$("sq").value||0,v:$("sv").value.trim(),st:$("ss").value,f:parseFloat($("sf").value)||0,y:parseInt($("sy").value)||0});saveS();["sn","sp","so","sq","sv","sf","sy"].forEach(i=>$(i).value="");rS()}
+function stS(i,v){S[i].st=v;saveS();rS()}
+function toSQ(i){const s=S[i];SQ.push({n:s.n,p:s.p,o:s.o,xi:-1,r:0,v:s.f||0,c:s.y?String(2026+s.y):"",a:{pac:0,sho:0,pas:0,dri:0,def:0,phy:0},h:[]});s.add=1;saveS();svQ();rS();rSQ()}
+function rS(){const sm=k=>S.filter(s=>s.st==k).reduce((t,s)=>t+(s.f||0),0);
+$("ssum").innerHTML=`Satın alma: <b>${sm("satin").toFixed(1)}M€</b> • Kiralama bedeli: <b>${sm("kira").toFixed(1)}M€</b> • İzlenen: <b>${S.filter(s=>(s.st||"izle")=="izle").length}</b>`;
+$("slist").innerHTML=S.length?S.map((s,i)=>{const st=s.st||"izle";return `<div class="card"><div class="ovr">${s.o||"?"}<span class="pos">pot ${s.q||"?"} • ${s.p||"-"} • piyasa ${s.v||"-"}</span></div><b>${s.n}</b><div class="quote" style="min-height:0">${verdict(s)}</div>
+<div class="row" style="margin-top:8px"><select onchange="stS(${i},this.value)">${Object.keys(ST).map(k=>`<option value="${k}"${k==st?" selected":""}>${ST[k]}</option>`).join("")}</select><input type="number" step="any" placeholder="Bedel M€" value="${s.f||""}" onchange="S[${i}].f=parseFloat(this.value)||0;saveS();rS()"><input type="number" placeholder="Sözleşme (yıl)" value="${s.y||""}" onchange="S[${i}].y=parseInt(this.value)||0;saveS()"></div>
+<div class="row" style="margin-top:8px">${(st=="satin"||st=="kira")&&!s.add?`<button class="go" onclick="toSQ(${i})">Kadroya ekle</button>`:s.add?'<span class="sub">Kadroda ✔</span>':""}<button onclick="dS(${i})">Sil</button></div></div>`}).join(""):'<div class="card sub">Henüz scout yok.</div>'}
+rS();rSQ();
 </script></body></html>
